@@ -1,0 +1,149 @@
+# MySQL InnoDB 算子性能看护工具需求设计文档
+
+ ## 1. 项目概述
+
+ 本项目旨在构建一个自动化性能基准测试工具,用于观测 MySQL InnoDB 引擎在执行各类 DDL(及后续扩展的 DML/Query)操作时的性能表现。通过标准化的"完全重构"流程,确保测试结果在不同硬件环境下的可比性,编写程序时候，应该遵循高内聚低耦合原则。
+
+ ## 2. 系统架构
+
+ 系统采用"配置驱动 + 脚本执行"模式,实现逻辑与数据的完全解耦。
+
+ ### 2.1 目录结构
+
+text
+/performance-monitor
+├── config.yaml          # 数据库连接配置与运行参数
+├── schema.sql           # 基表定义文件
+├── main.py              # 核心执行引擎
+├── test_cases/          # SQL 用例目录
+│   ├── dstore_test_case_001.sql
+│   ├── dstore_test_case_002.sql
+│   └── ...
+└── results/             # 结果输出目录
+    └── results_YYYYMMDD.csv
+
+
+ ## 3. 核心功能模块
+
+ ### 3.1 配置文件 (config.yaml)
+
+ 用于配置数据库连接及测试行为。
+
+yaml
+db:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "password"
+  database: "test"
+
+settings:
+  base_table_name: "test"
+  test_table_name: "test_temp"
+  result_file: "results/results.csv"
+
+
+ ### 3.2 基表管理 (schema.sql)
+
+ 包含所有数据类型的基表定义。程序启动时,将读取此文件并在目标库中创建基表。
+
+sql
+CREATE TABLE `test` (
+  `id_col` int AUTO_INCREMENT,
+  `int_col` mediumint,
+  `bigint_col` bigint,
+  `year_col` year,
+  `char_col` char(4),
+  `tinyint_col` tinyint unsigned,
+  `bool_col` tinyint(1),
+  `smallint_col` smallint,
+  `mediumint_col` mediumint unsigned,
+  `decimal_col` decimal(25,5) unsigned,
+  `float_col` float unsigned,
+  `double_col` double unsigned,
+  `date_col` date DEFAULT NULL,
+  `datetime_col` datetime(6),
+  `timestamp_col` timestamp NULL DEFAULT NULL,
+  `time_col` time,
+  `varchar_col` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
+  `binary_col` binary(1) DEFAULT NULL,
+  `varbinary_col` varbinary(255),
+  `tinyblob_col` tinyblob,
+  `blob_col` blob,
+  `mediumblob_col` mediumblob,
+  `longblob_col` longblob,
+  `tinytext_col` tinytext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
+  `text_col` text CHARACTER SET gbk COLLATE gbk_chinese_ci,
+  `mediumtext_col` mediumtext CHARACTER SET utf8mb3 COLLATE utf8mb3_bin,
+  `longtext_col` longtext CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci,
+  `enum_col` enum('aaa','bbb','ccc') CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
+  `set_col` set('111','222','333') CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
+  `bit_col` bit(8) DEFAULT b'10011001',
+  `unsigned_int_col` int unsigned DEFAULT NULL,
+  `unsigned_decimal_col` decimal(10,0) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id_col`)
+);
+
+
+ ### 3.3 测试用例规范 (test_cases/*.sql)
+
+ 每个 SQL 文件为一个独立的测试单元。
+
+ **规范:**
+ - 文件需要包含所测试的语句和简介
+ - 文件在最开始会准备数据
+ - 使用 -- @TIMER_START 标记计时开始
+ - 使用 -- @TIMER_END 标记计时结束
+ - 文件可能包含必要的前置数据准备(如 INSERT 语句)
+ - sql文件中除了最上面有注释，其他位置不必出现注释
+
+ **示例:**
+
+sql
+-- ALTER TABLE test_temp ADD INDEX idx_varchar(varchar_col);
+-- 测试test_temp对varchar_col加索引的执行时间
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS test_temp;
+create table test_temp like test;
+INSERT INTO test_temp SELECT * FROM test;
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE test_temp ADD INDEX idx_varchar(varchar_col);
+-- @TIMER_END
+
+
+ ## 4. Python 执行引擎逻辑 (main.py)
+
+ ### 4.1 核心流程
+
+ 1. **初始化:** 读取 config.yaml,建立数据库连接
+
+ 2. **创建基表:** 读取 schema.sql,在数据库中创建原始基表 test
+
+ 3. **遍历执行:** 扫描 test_cases/ 目录下的所有 .sql 文件
+ - 执行每个sql文件
+
+ - **计时阶段:**
+ - 解析 SQL 文件中 -- @TIMER_START 到 -- @TIMER_END 之间的语句
+ - 记录开始时间戳 \(T_1\) 和结束时间戳 \(T_2\)
+ - 计算耗时 \(\Delta T = T_2 - T_1\)
+
+ - **记录阶段:** 将 文件名、DDL语句、耗时 写入 CSV 文件
+
+ ### 4.2 开发注意事项
+
+ - **异常处理:** 若某个sql执行失败,程序应记录错误日志并代替执行时间，方便使用人直观的看到问题,然后继续执行下一个用例
+ - **参数化运行:** 支持命令行参数指定执行单个用例或某个用例范围（例如第一个-第10个）(例如 python main.py --cases add_index.sql,drop_index.sql)
+ -
+ ## 5. 输出规范
+
+ 输出文件格式为 CSV,字段定义如下，每个sql的结果占据一行:
+
+ | 字段名 | 说明 | 示例 |
+ |--------|------|------|
+ | test_case_name | 用例文件名 | dstore_test_case_001.sql |
+ | ddl_statement | 实际执行的 SQL 语句 | ALTER TABLE test_temp ADD INDEX... |
+ | execution_time_seconds | 执行耗时(秒) | 12.45 |
+ | timestamp | 执行时间戳 | 2026-03-24 10:00:00 |
