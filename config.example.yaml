@@ -1,0 +1,11 @@
+db:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "your_password"
+  database: "test"
+
+settings:
+  base_table_name: "test"
+  test_table_name: "test_temp"
+  result_file: "results/results.csv"
