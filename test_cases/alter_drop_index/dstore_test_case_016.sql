@@ -1,0 +1,15 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` DROP KEY `idx_drop_unique_key`;
+-- 测试使用 KEY 语法删除唯一索引的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+DELETE FROM `{{TEST_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` (`varchar_col`) VALUES ('duk_a'), ('duk_b');
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD UNIQUE INDEX `idx_drop_unique_key` (`varchar_col`);
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` DROP KEY `idx_drop_unique_key`;
+-- @TIMER_END

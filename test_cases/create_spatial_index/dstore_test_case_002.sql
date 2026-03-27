@@ -1,0 +1,15 @@
+-- CREATE INDEX `idx_sp_point_implicit` ON `{{TEST_TABLE_NAME}}` (`pt_implicit`);
+-- 测试空间列使用隐式 SPATIAL 语法建立索引的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD COLUMN `pt_implicit` POINT SRID 0 NULL;
+UPDATE `{{TEST_TABLE_NAME}}` SET `pt_implicit` = ST_GeomFromText('POINT(2 2)');
+ALTER TABLE `{{TEST_TABLE_NAME}}` MODIFY COLUMN `pt_implicit` POINT SRID 0 NOT NULL;
+-- @PREPARE_END
+
+-- @TIMER_START
+CREATE INDEX `idx_sp_point_implicit` ON `{{TEST_TABLE_NAME}}` (`pt_implicit`);
+-- @TIMER_END

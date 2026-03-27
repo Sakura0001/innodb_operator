@@ -1,0 +1,12 @@
+-- CREATE FULLTEXT INDEX `idx_ft_char_varchar` ON `{{TEST_TABLE_NAME}}` (`char_col`, `varchar_col`) VISIBLE;
+-- 测试 char 与 varchar 列在 VISIBLE 组合下CREATE FULLTEXT INDEX的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+CREATE FULLTEXT INDEX `idx_ft_char_varchar` ON `{{TEST_TABLE_NAME}}` (`char_col`, `varchar_col`) VISIBLE;
+-- @TIMER_END

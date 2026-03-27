@@ -1,0 +1,12 @@
+-- CREATE FULLTEXT INDEX `idx_ft_mediumtext_only` ON `{{TEST_TABLE_NAME}}` (`mediumtext_col`);
+-- 测试单列 mediumtext CREATE FULLTEXT INDEX 的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+CREATE FULLTEXT INDEX `idx_ft_mediumtext_only` ON `{{TEST_TABLE_NAME}}` (`mediumtext_col`);
+-- @TIMER_END

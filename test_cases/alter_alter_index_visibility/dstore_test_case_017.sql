@@ -1,0 +1,13 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` ALTER INDEX `idx_decimal_vis_same` VISIBLE;
+-- 测试 decimal 相关索引再次设置为 VISIBLE 的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD INDEX `idx_decimal_vis_same` (`unsigned_decimal_col`, `time_col`);
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` ALTER INDEX `idx_decimal_vis_same` VISIBLE;
+-- @TIMER_END

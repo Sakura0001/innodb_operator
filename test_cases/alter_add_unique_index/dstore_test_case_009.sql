@@ -1,0 +1,14 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` ADD UNIQUE INDEX `idx_unique_dup` (`varchar_col`);
+-- 测试唯一索引遇到重复数据时的报错记录
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+DELETE FROM `{{TEST_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` (`varchar_col`) VALUES ('dup_unique'), ('dup_unique');
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD UNIQUE INDEX `idx_unique_dup` (`varchar_col`);
+-- @TIMER_END

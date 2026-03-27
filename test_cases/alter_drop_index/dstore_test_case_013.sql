@@ -1,0 +1,14 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` DROP INDEX `idx_drop_after_visibility`;
+-- 测试索引切换为 INVISIBLE 后删除索引的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD INDEX `idx_drop_after_visibility` (`varchar_col`);
+ALTER TABLE `{{TEST_TABLE_NAME}}` ALTER INDEX `idx_drop_after_visibility` INVISIBLE;
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` DROP INDEX `idx_drop_after_visibility`;
+-- @TIMER_END

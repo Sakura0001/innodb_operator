@@ -1,0 +1,12 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` ADD FULLTEXT INDEX `idx_ft_binary_invalid` (`binary_col`);
+-- 测试 FULLTEXT 索引作用于 binary 列时的报错记录
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD FULLTEXT INDEX `idx_ft_binary_invalid` (`binary_col`);
+-- @TIMER_END

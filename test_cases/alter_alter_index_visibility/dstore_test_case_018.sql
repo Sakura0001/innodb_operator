@@ -1,0 +1,14 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` ALTER INDEX `idx_renamed_visible` INVISIBLE;
+-- 测试重命名后的索引切换可见性的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD INDEX `idx_renamed_visible_old` (`varchar_col`);
+ALTER TABLE `{{TEST_TABLE_NAME}}` RENAME INDEX `idx_renamed_visible_old` TO `idx_renamed_visible`;
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` ALTER INDEX `idx_renamed_visible` INVISIBLE;
+-- @TIMER_END

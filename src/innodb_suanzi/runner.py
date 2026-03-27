@@ -58,6 +58,7 @@ class AppConfig:
 @dataclass(frozen=True)
 class ParsedCase:
     path: Path
+    case_name: str
     description: str
     prepare_statements: tuple[str, ...]
     timer_statements: tuple[str, ...]
@@ -86,14 +87,21 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="config.yaml",
         help="Path to the YAML config file. Defaults to config.yaml in the current directory.",
     )
+    parser.add_argument(
+        "--operation",
+        help="Run all SQL cases under test_cases/<operation>/.",
+    )
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         "--cases",
-        help="Comma-separated SQL file names to run, such as case_001.sql,case_002.sql.",
+        help=(
+            "Comma-separated SQL case paths to run, such as "
+            "alter_add_index/dstore_test_case_001.sql."
+        ),
     )
     group.add_argument(
         "--case-range",
-        help="Inclusive case index range based on sorted SQL file names, such as 1-10.",
+        help="Inclusive case index range based on sorted case paths, such as 1-10.",
     )
     return parser.parse_args(argv)
 
@@ -136,10 +144,41 @@ def load_config(config_path: Path) -> AppConfig:
 def list_case_paths(test_cases_dir: Path) -> list[Path]:
     if not test_cases_dir.exists():
         raise BenchmarkError(f"Test case directory not found: {test_cases_dir}")
-    case_paths = sorted(path for path in test_cases_dir.glob("*.sql") if path.is_file())
+    case_paths = sorted(
+        (path for path in test_cases_dir.rglob("*.sql") if path.is_file()),
+        key=lambda path: path.relative_to(test_cases_dir).as_posix(),
+    )
     if not case_paths:
         raise BenchmarkError(f"No SQL test cases found in {test_cases_dir}")
     return case_paths
+
+
+def get_case_name(case_path: Path, test_cases_dir: Path) -> str:
+    return case_path.relative_to(test_cases_dir).as_posix()
+
+
+def filter_case_paths_by_operation(
+    case_paths: Sequence[Path],
+    test_cases_dir: Path,
+    operation: str | None = None,
+) -> list[Path]:
+    if not operation:
+        return list(case_paths)
+
+    requested_operation = operation.strip().strip("/\\")
+    if not requested_operation:
+        raise BenchmarkError("Operation name cannot be empty")
+
+    selected_paths = [
+        path
+        for path in case_paths
+        if get_case_name(path, test_cases_dir).split("/", 1)[0] == requested_operation
+    ]
+    if not selected_paths:
+        raise BenchmarkError(
+            f"No SQL test cases found for operation: {requested_operation}"
+        )
+    return selected_paths
 
 
 def parse_case_range(raw_range: str, total_cases: int) -> tuple[int, int]:
@@ -160,6 +199,7 @@ def parse_case_range(raw_range: str, total_cases: int) -> tuple[int, int]:
 
 def select_case_paths(
     case_paths: Sequence[Path],
+    test_cases_dir: Path,
     cases_arg: str | None = None,
     case_range_arg: str | None = None,
 ) -> list[Path]:
@@ -168,11 +208,39 @@ def select_case_paths(
         if not requested_names:
             raise BenchmarkError("No case names were provided to --cases")
 
-        lookup = {path.name: path for path in case_paths}
-        missing = [name for name in requested_names if name not in lookup]
-        if missing:
-            raise BenchmarkError(f"Requested case files not found: {', '.join(missing)}")
-        return [lookup[name] for name in requested_names]
+        relative_lookup = {
+            get_case_name(path, test_cases_dir): path for path in case_paths
+        }
+        basename_lookup: dict[str, list[Path]] = {}
+        for path in case_paths:
+            basename_lookup.setdefault(path.name, []).append(path)
+
+        selected_paths: list[Path] = []
+        missing_names: list[str] = []
+        for requested_name in requested_names:
+            normalized_name = requested_name.replace("\\", "/")
+            if "/" in normalized_name:
+                matched_path = relative_lookup.get(normalized_name)
+                if matched_path is None:
+                    missing_names.append(requested_name)
+                    continue
+                selected_paths.append(matched_path)
+                continue
+
+            matched_paths = basename_lookup.get(normalized_name, [])
+            if not matched_paths:
+                missing_names.append(requested_name)
+                continue
+            if len(matched_paths) > 1:
+                raise BenchmarkError(
+                    f"Requested case file name is ambiguous: {requested_name}. "
+                    "Use operation/file.sql."
+                )
+            selected_paths.append(matched_paths[0])
+
+        if missing_names:
+            raise BenchmarkError(f"Requested case files not found: {', '.join(missing_names)}")
+        return selected_paths
 
     if case_range_arg:
         start, end = parse_case_range(case_range_arg, len(case_paths))
@@ -291,7 +359,12 @@ def split_sql_statements(sql_text: str) -> list[str]:
     return statements
 
 
-def parse_case_file(case_path: Path, settings: Settings) -> ParsedCase:
+def parse_case_file(
+    case_path: Path,
+    settings: Settings,
+    *,
+    case_name: str | None = None,
+) -> ParsedCase:
     rendered_text = render_sql_template(case_path.read_text(encoding="utf-8"), settings)
     description_lines: list[str] = []
     prepare_lines: list[str] = []
@@ -363,6 +436,7 @@ def parse_case_file(case_path: Path, settings: Settings) -> ParsedCase:
 
     return ParsedCase(
         path=case_path,
+        case_name=case_name or case_path.name,
         description="\n".join(line for line in description_lines if line),
         prepare_statements=prepare_statements,
         timer_statements=timer_statements,
@@ -409,7 +483,10 @@ def execute_schema(config: AppConfig, schema_path: Path) -> None:
     if not schema_path.exists():
         raise BenchmarkError(f"Schema file not found: {schema_path}")
 
-    rendered_text = render_sql_template(schema_path.read_text(encoding="utf-8"), config.settings)
+    rendered_text = render_sql_template(
+        schema_path.read_text(encoding="utf-8"),
+        config.settings,
+    )
     statements = split_sql_statements(rendered_text)
     if not statements:
         raise BenchmarkError(f"Schema file does not contain executable SQL: {schema_path}")
@@ -430,16 +507,16 @@ def execute_case(config: AppConfig, parsed_case: ParsedCase) -> ResultRow:
         start = time.perf_counter()
         execute_statements(connection, parsed_case.timer_statements)
         elapsed_seconds = time.perf_counter() - start
-        logging.info("Case %s completed in %.6f seconds", parsed_case.path.name, elapsed_seconds)
+        logging.info("Case %s completed in %.6f seconds", parsed_case.case_name, elapsed_seconds)
         execution_value = f"{elapsed_seconds:.6f}"
-    except Exception as exc:  # pragma: no cover - exercised by integration run
-        logging.exception("Case %s failed", parsed_case.path.name)
+    except Exception as exc:
+        logging.exception("Case %s failed", parsed_case.case_name)
         execution_value = f"ERROR: {exc}"
     finally:
         connection.close()
 
     return ResultRow(
-        test_case_name=parsed_case.path.name,
+        test_case_name=parsed_case.case_name,
         ddl_statement=parsed_case.ddl_statement,
         execution_time_seconds=execution_value,
         timestamp=timestamp,
@@ -467,6 +544,7 @@ def write_results(result_path: Path, results: Sequence[ResultRow]) -> None:
 def run_benchmark(
     config: AppConfig,
     *,
+    operation: str | None = None,
     cases_arg: str | None = None,
     case_range_arg: str | None = None,
 ) -> Path:
@@ -477,10 +555,26 @@ def run_benchmark(
     result_path = config.root_dir / config.settings.result_file
 
     execute_schema(config, schema_path)
-
     case_paths = list_case_paths(test_cases_dir)
-    selected_case_paths = select_case_paths(case_paths, cases_arg=cases_arg, case_range_arg=case_range_arg)
-    parsed_cases = [parse_case_file(case_path, config.settings) for case_path in selected_case_paths]
+    filtered_case_paths = filter_case_paths_by_operation(
+        case_paths,
+        test_cases_dir,
+        operation=operation,
+    )
+    selected_case_paths = select_case_paths(
+        filtered_case_paths,
+        test_cases_dir,
+        cases_arg=cases_arg,
+        case_range_arg=case_range_arg,
+    )
+    parsed_cases = [
+        parse_case_file(
+            case_path,
+            config.settings,
+            case_name=get_case_name(case_path, test_cases_dir),
+        )
+        for case_path in selected_case_paths
+    ]
     results = [execute_case(config, parsed_case) for parsed_case in parsed_cases]
     write_results(result_path, results)
     return result_path
@@ -494,6 +588,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         config = load_config(Path(args.config))
         result_path = run_benchmark(
             config,
+            operation=args.operation,
             cases_arg=args.cases,
             case_range_arg=args.case_range,
         )

@@ -1,0 +1,14 @@
+-- CREATE UNIQUE INDEX `idx_unique_bit_date` ON `{{TEST_TABLE_NAME}}` (`bit_col`, `date_col`);
+-- 测试 bit 与 date 列组合CREATE UNIQUE INDEX的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+DELETE FROM `{{TEST_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` (`bit_col`, `date_col`) VALUES (b'00000001', '2024-01-01'), (b'00000010', '2024-01-02');
+-- @PREPARE_END
+
+-- @TIMER_START
+CREATE UNIQUE INDEX `idx_unique_bit_date` ON `{{TEST_TABLE_NAME}}` (`bit_col`, `date_col`);
+-- @TIMER_END

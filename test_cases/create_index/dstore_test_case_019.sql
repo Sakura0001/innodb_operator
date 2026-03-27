@@ -1,0 +1,12 @@
+-- CREATE INDEX `idx_missing_expr` ON `{{TEST_TABLE_NAME}}` ((`missing_col` + 1));
+-- 测试函数索引引用不存在列时的报错记录
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+CREATE INDEX `idx_missing_expr` ON `{{TEST_TABLE_NAME}}` ((`missing_col` + 1));
+-- @TIMER_END

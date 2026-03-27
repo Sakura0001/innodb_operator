@@ -1,5 +1,5 @@
--- ALTER TABLE {{TEST_TABLE_NAME}} ADD INDEX idx_varchar(varchar_col);
--- 测试 {{TEST_TABLE_NAME}} 对 varchar_col 新增索引的执行时间
+-- CREATE FULLTEXT INDEX `idx_ft_invalid_type` ON `{{TEST_TABLE_NAME}}` (`int_col`);
+-- 测试 CREATE FULLTEXT INDEX作用于非字符列时的报错记录
 
 -- @PREPARE_START
 DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
@@ -8,5 +8,5 @@ INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
 -- @PREPARE_END
 
 -- @TIMER_START
-ALTER TABLE `{{TEST_TABLE_NAME}}` ADD INDEX `idx_varchar` (`varchar_col`);
+CREATE FULLTEXT INDEX `idx_ft_invalid_type` ON `{{TEST_TABLE_NAME}}` (`int_col`);
 -- @TIMER_END

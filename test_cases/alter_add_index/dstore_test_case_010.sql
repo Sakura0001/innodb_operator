@@ -1,0 +1,13 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` ADD INDEX `idx_dup_name` (`varchar_col`);
+-- 测试重复普通索引名时的报错记录
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD INDEX `idx_dup_name` (`char_col`);
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD INDEX `idx_dup_name` (`varchar_col`);
+-- @TIMER_END

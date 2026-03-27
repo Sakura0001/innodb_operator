@@ -1,0 +1,26 @@
+1. 在生成sql语句时，请查阅mysql官方文档，确定当前这一类型的语句会涉及到哪些语法，然后在对每种语句进行下面的生成。
+2. 请根据我下面的测试用例规范帮我生成SQL语句 具体的数据表如下：
+CREATE TABLE test ( id_col int AUTO_INCREMENT, int_col mediumint, bigint_col bigint, year_col year, char_col char(4), tinyint_col tinyint unsigned, bool_col tinyint(1), smallint_col smallint, mediumint_col mediumint unsigned, decimal_col decimal(25,5) unsigned, float_col float unsigned, double_col double unsigned, date_col date DEFAULT NULL, datetime_col datetime(6), timestamp_col timestamp NULL DEFAULT NULL, time_col time, varchar_col varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin, binary_col binary(1) DEFAULT NULL, varbinary_col varbinary(255), tinyblob_col tinyblob, blob_col blob, mediumblob_col mediumblob, longblob_col longblob, tinytext_col tinytext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin, text_col text CHARACTER SET gbk COLLATE gbk_chinese_ci, mediumtext_col mediumtext CHARACTER SET utf8mb3 COLLATE utf8mb3_bin, longtext_col longtext CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci, enum_col enum('aaa','bbb','ccc') CHARACTER SET utf8mb4 COLLATE utf8mb4_bin, set_col set('111','222','333') CHARACTER SET utf8mb4 COLLATE utf8mb4_bin, bit_col bit(8) DEFAULT b'10011001', unsigned_int_col int unsigned DEFAULT NULL, unsigned_decimal_col decimal(10,0) unsigned DEFAULT NULL, PRIMARY KEY (id_col) );
+1. 我的测试表为test_temp，和test，其中test作为基表，test_temp作为执行语句的表，该工具主要来验证DDL或者其他操作的执行时间。 每个 SQL 文件为一个独立的测试单元。
+**规范:**
+- 测试的版本为mysql 8.0.41，遵照这个语法。
+- 文件需要包含所测试的语句和简介
+- 文件在最开始会准备数据
+- 使用 -- @TIMER_START 标记计时开始 - 使用 -- @TIMER_END 标记计时结束
+- 文件可能包含必要的前置数据准备(如 INSERT 语句)
+- sql文件中除了最上面有注释，其他位置不必出现注释
+- 当我给你了一个DDL语句时候，你需要根据这个DDL语句去遍历生成所有可能情况，例如alter table tb ADD {INDEX | KEY} [index_name] [index_type] (key_part,...) [index_option] ...中间有很多可选项，请帮我生成全量组合，允许生成“可能报错”的测试用例。生成若干个下示文件sql，主要更改计算执行时间之间的语句。
+- 生成的所有DDL语句都不需要指定具体的ALGORITHM。
+- 生成的DDL语句尽可能完成更多组合，同时还应该覆盖不同类型的列，例如int类型，char类型，set类型，enum类型，bit类型，时间类型，保证每种类型都能覆盖到。
+- 数据准备永远为下面三句内容 @PREPARE_START和@PREPARE_END 及之间的内容需要根据当前的表和需要测试的语句而变化，例如需要删除索引，就需要在prepare部分新建索引，简介参照示例中的格式。文件命名请延续test_cases下面的命名。
+**示例:**
+-- ALTER TABLE test_temp ADD INDEX idx_varchar(varchar_col);
+-- 测试test_temp对varchar_col加索引的执行时间
+-- @PREPARE_START
+DROP TABLE IF EXISTS test_temp;
+create table test_temp like test;
+INSERT INTO test_temp SELECT * FROM test;
+-- @PREPARE_END
+-- @TIMER_START
+ALTER TABLE test_temp ADD INDEX idx_varchar(varchar_col);
+-- @TIMER_END

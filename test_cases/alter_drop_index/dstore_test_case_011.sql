@@ -1,0 +1,13 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` DROP INDEX `idx_drop_text_prefix`;
+-- 测试删除 text 前缀索引的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD INDEX `idx_drop_text_prefix` (`text_col`(20));
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` DROP INDEX `idx_drop_text_prefix`;
+-- @TIMER_END
