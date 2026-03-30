@@ -228,3 +228,20 @@ def test_run_benchmark_executes_schema_and_operation_filter(
     assert [row.test_case_name for row in captured_results] == [
         "alter_add_index/dstore_test_case_001.sql",
     ]
+
+
+def test_parse_generated_insert_select_case() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    case_path = repo_root / "test_cases" / "insert_single_index" / "dstore_test_case_001.sql"
+    if not case_path.is_file():
+        pytest.skip("run scripts/gen_missing_test_cases.py to generate insert_* cases")
+    settings = Settings(
+        base_table_name="test",
+        test_table_name="test_temp",
+        result_file="results/results.csv",
+    )
+    name = "insert_single_index/dstore_test_case_001.sql"
+    parsed = parse_case_file(case_path, settings, case_name=name)
+    assert parsed.case_name == name
+    assert any("INSERT INTO" in stmt.upper() for stmt in parsed.timer_statements)
+    assert any("_src" in stmt for stmt in parsed.prepare_statements)

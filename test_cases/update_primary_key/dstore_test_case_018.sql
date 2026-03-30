@@ -1,0 +1,12 @@
+-- UPDATE `{{TEST_TABLE_NAME}}` SET `decimal_col` = CAST(`id_col` AS DECIMAL(25,5)) * 1.5 WHERE `id_col` % 4 = 0;
+-- 测试仅主键下 UPDATE decimal_col WHERE id_col % 4 = 0 的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+UPDATE `{{TEST_TABLE_NAME}}` SET `decimal_col` = CAST(`id_col` AS DECIMAL(25,5)) * 1.5 WHERE `id_col` % 4 = 0;
+-- @TIMER_END

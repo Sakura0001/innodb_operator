@@ -1,0 +1,12 @@
+-- UPDATE `{{TEST_TABLE_NAME}}` SET `varchar_col` = 'pk_hit' WHERE `id_col` = 1;
+-- 测试仅主键下 UPDATE 单行 WHERE id_col 精确点查的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+UPDATE `{{TEST_TABLE_NAME}}` SET `varchar_col` = 'pk_hit' WHERE `id_col` = 1;
+-- @TIMER_END

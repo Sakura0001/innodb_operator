@@ -1,0 +1,12 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` CHARACTER SET = ascii COLLATE = ascii_general_ci;
+-- 测试将表字符集指定为 ascii 且排序规则为 ascii_general_ci 的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` CHARACTER SET = ascii COLLATE = ascii_general_ci;
+-- @TIMER_END

@@ -1,0 +1,12 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` CHANGE COLUMN `bool_col` `bool_col_r1` tinyint(1);
+-- 测试使用 CHANGE 将 bool_col 重命名为 bool_col_r1 的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` CHANGE COLUMN `bool_col` `bool_col_r1` tinyint(1);
+-- @TIMER_END

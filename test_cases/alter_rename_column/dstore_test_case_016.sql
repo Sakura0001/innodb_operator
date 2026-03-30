@@ -1,0 +1,12 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` CHANGE COLUMN `binary_col` `binary_col_r1` binary(1) DEFAULT NULL;
+-- 测试使用 CHANGE 将 binary_col 重命名为 binary_col_r1 的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` CHANGE COLUMN `binary_col` `binary_col_r1` binary(1) DEFAULT NULL;
+-- @TIMER_END

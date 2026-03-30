@@ -1,0 +1,12 @@
+-- UPDATE `{{TEST_TABLE_NAME}}` SET `char_col` = 'big3' WHERE `id_col` > 5000 AND `id_col` <= 10000;
+-- 测试仅主键下 UPDATE WHERE id_col > 5000 大范围的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+UPDATE `{{TEST_TABLE_NAME}}` SET `char_col` = 'big3' WHERE `id_col` > 5000 AND `id_col` <= 10000;
+-- @TIMER_END

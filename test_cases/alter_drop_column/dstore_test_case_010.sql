@@ -1,0 +1,13 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` DROP COLUMN `unsigned_int_col`;
+-- 测试删除复合唯一索引中的一个列的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD UNIQUE INDEX `idx_drop_col_unique_pair` (`id_col`, `unsigned_int_col`);
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` DROP COLUMN `unsigned_int_col`;
+-- @TIMER_END

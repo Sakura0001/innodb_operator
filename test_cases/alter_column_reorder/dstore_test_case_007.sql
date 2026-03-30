@@ -1,0 +1,12 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` CHANGE COLUMN `smallint_col` `smallint_col` smallint FIRST;
+-- 测试使用 CHANGE 将 smallint_col 调整到表首的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` CHANGE COLUMN `smallint_col` `smallint_col` smallint FIRST;
+-- @TIMER_END

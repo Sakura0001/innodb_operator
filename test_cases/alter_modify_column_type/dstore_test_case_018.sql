@@ -1,0 +1,12 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` CHANGE COLUMN `enum_col` `enum_col` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+-- 测试将 enum_col 从 enum 改为 varchar(16) 的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` CHANGE COLUMN `enum_col` `enum_col` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+-- @TIMER_END

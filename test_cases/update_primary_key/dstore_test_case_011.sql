@@ -1,0 +1,12 @@
+-- UPDATE `{{TEST_TABLE_NAME}}` SET `bigint_col` = CAST(`id_col` AS SIGNED) * 1000 WHERE `id_col` % 5 = 0;
+-- 测试仅主键下 UPDATE WHERE id_col % 5 = 0 五分之一行的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+UPDATE `{{TEST_TABLE_NAME}}` SET `bigint_col` = CAST(`id_col` AS SIGNED) * 1000 WHERE `id_col` % 5 = 0;
+-- @TIMER_END

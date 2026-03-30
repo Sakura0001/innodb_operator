@@ -1,0 +1,13 @@
+-- ALTER TABLE `{{TEST_TABLE_NAME}}` DROP COLUMN `int_col`, DROP COLUMN `bigint_col`;
+-- 测试一次删除普通复合索引全部列的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD INDEX `idx_drop_col_pair_all` (`int_col`, `bigint_col`);
+-- @PREPARE_END
+
+-- @TIMER_START
+ALTER TABLE `{{TEST_TABLE_NAME}}` DROP COLUMN `int_col`, DROP COLUMN `bigint_col`;
+-- @TIMER_END

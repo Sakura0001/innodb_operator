@@ -1,0 +1,12 @@
+-- UPDATE `{{TEST_TABLE_NAME}}` SET `bool_col` = 1, `tinyint_col` = 10 WHERE `id_col` IN (1, 10, 100, 1000, 10000);
+-- 测试仅主键下 UPDATE WHERE id_col IN 离散少量主键的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+-- @PREPARE_END
+
+-- @TIMER_START
+UPDATE `{{TEST_TABLE_NAME}}` SET `bool_col` = 1, `tinyint_col` = 10 WHERE `id_col` IN (1, 10, 100, 1000, 10000);
+-- @TIMER_END

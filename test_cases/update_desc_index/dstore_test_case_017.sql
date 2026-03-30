@@ -1,0 +1,13 @@
+-- UPDATE `{{TEST_TABLE_NAME}}` SET `datetime_col` = '2024-01-01 00:00:00' WHERE `varchar_col` IS NOT NULL AND `int_col` IS NOT NULL;
+-- 测试逆序索引 varchar_col DESC 下 UPDATE datetime_col WHERE varchar_col IS NOT NULL 的执行情况
+
+-- @PREPARE_START
+DROP TABLE IF EXISTS `{{TEST_TABLE_NAME}}`;
+CREATE TABLE `{{TEST_TABLE_NAME}}` LIKE `{{BASE_TABLE_NAME}}`;
+INSERT INTO `{{TEST_TABLE_NAME}}` SELECT * FROM `{{BASE_TABLE_NAME}}`;
+ALTER TABLE `{{TEST_TABLE_NAME}}` ADD INDEX `idx_upd_desc_vc` (`varchar_col` DESC);
+-- @PREPARE_END
+
+-- @TIMER_START
+UPDATE `{{TEST_TABLE_NAME}}` SET `datetime_col` = '2024-01-01 00:00:00' WHERE `varchar_col` IS NOT NULL AND `int_col` IS NOT NULL;
+-- @TIMER_END
